@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-text-primary font-serif;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-accent/40 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-accent/60;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-white border border-border rounded-xl shadow-sm;
+  }
+
+  .glass-subtle {
+    @apply bg-white/80 border border-border/50 rounded-lg shadow-sm;
+  }
+
+  .glass-card {
+    @apply bg-white border border-border rounded-xl shadow-sm
+           hover:shadow-md hover:border-accent/40
+           transition-all duration-200;
+  }
+
+  .gold-glow {
+    box-shadow: 0 0 20px rgba(201, 169, 110, 0.08);
+  }
+
+  .gold-glow-strong {
+    box-shadow: 0 0 30px rgba(201, 169, 110, 0.15);
+  }
+
+  .kanban-column {
+    @apply flex flex-col min-w-[280px] max-w-[320px] h-full;
+  }
+
+  .drag-overlay {
+    @apply opacity-90 rotate-2 scale-105;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
