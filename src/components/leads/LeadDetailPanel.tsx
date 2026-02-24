@@ -6,9 +6,8 @@ import { useLeadsStore } from "@/stores/useLeadsStore";
 import { useStagesStore } from "@/stores/useStagesStore";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
 import { Badge } from "@/components/ui/Badge";
-import { formatCurrency, formatDateTime, daysAgo, cn } from "@/lib/utils";
+import { displayName, formatDateTime, daysAgo, cn } from "@/lib/utils";
 import type { Lead } from "@/types";
 
 export function LeadDetailPanel() {
@@ -17,9 +16,6 @@ export function LeadDetailPanel() {
   const leads = useLeadsStore((s) => s.leads);
   const updateLead = useLeadsStore((s) => s.updateLead);
   const moveLead = useLeadsStore((s) => s.moveLead);
-  const markAsWon = useLeadsStore((s) => s.markAsWon);
-  const markAsLost = useLeadsStore((s) => s.markAsLost);
-  const users = useLeadsStore((s) => s.users);
   const stages = useStagesStore((s) => s.stages);
 
   const lead = leads.find((l) => l.id === selectedLeadId);
@@ -29,14 +25,13 @@ export function LeadDetailPanel() {
   useEffect(() => {
     if (lead) {
       setForm({
-        name: lead.name,
-        email: lead.email,
-        phone: lead.phone,
-        company: lead.company,
-        value: lead.value,
-        source: lead.source,
-        notes: lead.notes,
-        assignedTo: lead.assignedTo,
+        firstname: lead.firstname,
+        lastname: lead.lastname,
+        whatsapp: lead.whatsapp,
+        state: lead.state,
+        gender: lead.gender,
+        chat_status: lead.chat_status,
+        followup: lead.followup,
       });
       setEditing(false);
     }
@@ -48,7 +43,8 @@ export function LeadDetailPanel() {
   const sortedStages = [...stages].sort((a, b) => a.order - b.order);
   const currentStageIndex = sortedStages.findIndex((s) => s.id === lead.stageId);
   const nextStage = sortedStages[currentStageIndex + 1];
-  const isClosedStage = lead.stageId === "stage-won" || lead.stageId === "stage-lost";
+  const staleSince = lead.ultima_interacao ?? lead.created_at;
+  const days = staleSince ? daysAgo(staleSince) : 0;
 
   function handleSave() {
     if (!lead) return;
@@ -57,10 +53,8 @@ export function LeadDetailPanel() {
   }
 
   function handleNextStage() {
-    if (!lead) return;
-    if (nextStage && !nextStage.isSystem) {
-      moveLead(lead.id, nextStage.id);
-    }
+    if (!lead || !nextStage) return;
+    moveLead(lead.id, nextStage.id);
   }
 
   return (
@@ -77,8 +71,12 @@ export function LeadDetailPanel() {
           {/* Header */}
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-xl font-semibold text-text-primary">{lead.name}</h2>
-              <p className="text-sm text-text-secondary">{lead.company}</p>
+              <h2 className="text-xl font-semibold text-text-primary">
+                {displayName(lead.firstname, lead.lastname)}
+              </h2>
+              {lead.whatsapp && (
+                <p className="text-sm text-text-secondary">{lead.whatsapp}</p>
+              )}
             </div>
             <button
               onClick={() => setSelectedLeadId(null)}
@@ -90,35 +88,29 @@ export function LeadDetailPanel() {
             </button>
           </div>
 
-          {/* Stage & Value */}
+          {/* Stage & staleness */}
           <div className="flex items-center gap-3">
             {currentStage && (
               <Badge color={currentStage.color}>{currentStage.name}</Badge>
             )}
-            <span className="text-lg font-semibold text-accent">
-              {formatCurrency(lead.value)}
-            </span>
             <span className="text-xs text-text-secondary">
-              {daysAgo(lead.updatedAt)}d parado
+              {days}d parado
             </span>
+            {lead.state && (
+              <span className="text-xs text-text-secondary bg-surface-hover px-1.5 py-0.5 rounded-full">
+                {lead.state}
+              </span>
+            )}
           </div>
 
           {/* Actions */}
-          {!isClosedStage && (
-            <div className="flex gap-2">
-              {nextStage && !nextStage.isSystem && (
-                <Button size="sm" variant="secondary" onClick={handleNextStage}>
-                  Avançar para {nextStage.name}
-                </Button>
-              )}
-              <Button size="sm" variant="success" onClick={() => markAsWon(lead.id)}>
-                Ganhou
+          <div className="flex gap-2">
+            {nextStage && (
+              <Button size="sm" variant="secondary" onClick={handleNextStage}>
+                Avançar para {nextStage.name}
               </Button>
-              <Button size="sm" variant="danger" onClick={() => markAsLost(lead.id)}>
-                Perdido
-              </Button>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Form */}
           <div className="space-y-4">
@@ -143,58 +135,49 @@ export function LeadDetailPanel() {
             <div className="grid grid-cols-2 gap-3">
               <Input
                 label="Nome"
-                value={form.name || ""}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                value={form.firstname ?? ""}
+                onChange={(e) => setForm({ ...form, firstname: e.target.value })}
                 disabled={!editing}
               />
               <Input
-                label="Empresa"
-                value={form.company || ""}
-                onChange={(e) => setForm({ ...form, company: e.target.value })}
+                label="Sobrenome"
+                value={form.lastname ?? ""}
+                onChange={(e) => setForm({ ...form, lastname: e.target.value })}
                 disabled={!editing}
               />
               <Input
-                label="Email"
-                value={form.email || ""}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                label="WhatsApp"
+                value={form.whatsapp ?? ""}
+                onChange={(e) => setForm({ ...form, whatsapp: e.target.value })}
                 disabled={!editing}
               />
               <Input
-                label="Telefone"
-                value={form.phone || ""}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                label="Estado"
+                value={form.state ?? ""}
+                onChange={(e) => setForm({ ...form, state: e.target.value })}
                 disabled={!editing}
               />
               <Input
-                label="Valor (R$)"
-                type="number"
-                value={form.value || 0}
-                onChange={(e) => setForm({ ...form, value: Number(e.target.value) })}
+                label="Gênero"
+                value={form.gender ?? ""}
+                onChange={(e) => setForm({ ...form, gender: e.target.value })}
                 disabled={!editing}
               />
               <Input
-                label="Fonte"
-                value={form.source || ""}
-                onChange={(e) => setForm({ ...form, source: e.target.value })}
+                label="Chat Status"
+                value={form.chat_status ?? ""}
+                onChange={(e) => setForm({ ...form, chat_status: e.target.value })}
                 disabled={!editing}
               />
             </div>
 
-            <Select
-              label="Responsável"
-              value={form.assignedTo || ""}
-              onChange={(e) => setForm({ ...form, assignedTo: e.target.value })}
-              disabled={!editing}
-              options={users.map((u) => ({ value: u.id, label: u.name }))}
-            />
-
             <div className="space-y-1.5">
               <label className="block text-xs font-medium text-text-secondary">
-                Notas
+                Followup
               </label>
               <textarea
-                value={form.notes || ""}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                value={form.followup ?? ""}
+                onChange={(e) => setForm({ ...form, followup: e.target.value })}
                 disabled={!editing}
                 rows={3}
                 className={cn(
@@ -207,47 +190,17 @@ export function LeadDetailPanel() {
             </div>
           </div>
 
-          {/* Timeline */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-text-primary">Histórico</h3>
-            <div className="space-y-3">
-              {[...lead.history].reverse().map((entry) => {
-                const fromStage = entry.fromStage
-                  ? stages.find((s) => s.id === entry.fromStage)
-                  : null;
-                const toStage = entry.toStage
-                  ? stages.find((s) => s.id === entry.toStage)
-                  : null;
-
-                return (
-                  <div
-                    key={entry.id}
-                    className="flex gap-3 text-xs"
-                  >
-                    <div className="flex flex-col items-center">
-                      <div className="w-2 h-2 rounded-full bg-accent/50 mt-1" />
-                      <div className="w-px flex-1 bg-border" />
-                    </div>
-                    <div className="pb-3">
-                      <p className="text-text-primary font-medium">
-                        {entry.action}
-                        {fromStage && toStage && (
-                          <span className="text-text-secondary font-normal">
-                            {" "}— {fromStage.name} → {toStage.name}
-                          </span>
-                        )}
-                      </p>
-                      {entry.note && (
-                        <p className="text-text-secondary mt-0.5">{entry.note}</p>
-                      )}
-                      <p className="text-text-secondary/60 mt-0.5">
-                        {formatDateTime(entry.date)}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+          {/* Info */}
+          <div className="space-y-2 text-xs text-text-secondary">
+            {lead.messages_count != null && (
+              <p>Mensagens: {lead.messages_count}</p>
+            )}
+            {lead.created_at && (
+              <p>Criado em: {formatDateTime(lead.created_at)}</p>
+            )}
+            {lead.ultima_interacao && (
+              <p>Última interação: {lead.ultima_interacao}</p>
+            )}
           </div>
         </div>
       </div>

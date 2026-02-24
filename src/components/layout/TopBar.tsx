@@ -1,11 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useUIStore } from "@/stores/useUIStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export function TopBar() {
+  const router = useRouter();
   const searchQuery = useUIStore((s) => s.searchQuery);
   const setSearchQuery = useUIStore((s) => s.setSearchQuery);
+  const userName = useAuthStore((s) => s.userName);
+  const logout = useAuthStore((s) => s.logout);
   const [localQuery, setLocalQuery] = useState(searchQuery);
 
   useEffect(() => {
@@ -18,6 +23,17 @@ export function TopBar() {
   useEffect(() => {
     setLocalQuery(searchQuery);
   }, [searchQuery]);
+
+  const initials = userName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase();
+
+  function handleLogout() {
+    logout();
+    router.replace("/login");
+  }
 
   return (
     <header className="h-16 border-b border-border glass flex items-center px-6 gap-4 z-20">
@@ -60,9 +76,18 @@ export function TopBar() {
       {/* Right side */}
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-full bg-accent/15 flex items-center justify-center">
-          <span className="text-accent text-xs font-semibold">JS</span>
+          <span className="text-accent text-xs font-semibold">{initials}</span>
         </div>
-        <span className="text-sm text-text-secondary hidden sm:block">João Silva</span>
+        <span className="text-sm text-text-secondary hidden sm:block">{userName}</span>
+        <button
+          onClick={handleLogout}
+          title="Sair"
+          className="text-text-secondary/50 hover:text-danger transition-colors p-1"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+        </button>
       </div>
     </header>
   );

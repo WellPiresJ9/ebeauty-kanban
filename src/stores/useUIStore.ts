@@ -4,17 +4,17 @@ import type { ViewMode, SortField, SortDirection } from "@/types";
 interface UIStore {
   viewMode: ViewMode;
   searchQuery: string;
-  selectedLeadId: string | null;
-  selectedLeadIds: string[];
+  selectedLeadId: number | null;
+  selectedLeadIds: number[];
   sortField: SortField;
   sortDirection: SortDirection;
   sidebarOpen: boolean;
 
   setViewMode: (mode: ViewMode) => void;
   setSearchQuery: (query: string) => void;
-  setSelectedLeadId: (id: string | null) => void;
-  toggleLeadSelection: (id: string) => void;
-  selectAllLeads: (ids: string[]) => void;
+  setSelectedLeadId: (id: number | null) => void;
+  toggleLeadSelection: (id: number) => void;
+  selectAllLeads: (ids: number[]) => void;
   clearSelection: () => void;
   setSortField: (field: SortField) => void;
   setSortDirection: (direction: SortDirection) => void;
@@ -27,7 +27,7 @@ export const useUIStore = create<UIStore>((set, get) => ({
   searchQuery: "",
   selectedLeadId: null,
   selectedLeadIds: [],
-  sortField: "createdAt",
+  sortField: "created_at",
   sortDirection: "desc",
   sidebarOpen: true,
 

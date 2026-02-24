@@ -3,43 +3,26 @@ export interface Stage {
   name: string;
   color: string;
   order: number;
-  isSystem?: boolean; // "Ganhou" and "Perdido" are system stages
 }
 
 export interface Lead {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  company: string;
-  value: number;
+  id: number;
+  firstname: string | null;
+  lastname: string | null;
+  whatsapp: string | null;
+  funnel_step: string | null;
+  state: string | null;
+  gender: string | null;
+  chat_status: string | null;
+  messages_count: number | null;
+  followup: string | null;
+  ultima_interacao: string | null;
+  created_at: string | null;
+  // Derived field set client-side from funnel_step
   stageId: string;
-  assignedTo: string;
-  source: string;
-  notes: string;
-  createdAt: string;
-  updatedAt: string;
-  closedAt?: string;
-  history: HistoryEntry[];
-}
-
-export interface HistoryEntry {
-  id: string;
-  date: string;
-  action: string;
-  fromStage?: string;
-  toStage?: string;
-  note?: string;
-}
-
-export interface User {
-  id: string;
-  name: string;
-  role: string;
-  avatar?: string;
 }
 
 export type ViewMode = "kanban" | "table";
 
-export type SortField = "name" | "value" | "createdAt" | "updatedAt" | "company";
+export type SortField = "firstname" | "created_at" | "messages_count";
 export type SortDirection = "asc" | "desc";

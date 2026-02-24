@@ -3,10 +3,8 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Lead } from "@/types";
-import { formatCurrency, daysAgo } from "@/lib/utils";
+import { displayName, daysAgo, cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/useUIStore";
-import { useLeadsStore } from "@/stores/useLeadsStore";
-import { cn } from "@/lib/utils";
 
 interface KanbanCardProps {
   lead: Lead;
@@ -15,9 +13,8 @@ interface KanbanCardProps {
 
 export function KanbanCard({ lead, overlay }: KanbanCardProps) {
   const setSelectedLeadId = useUIStore((s) => s.setSelectedLeadId);
-  const users = useLeadsStore((s) => s.users);
-  const days = daysAgo(lead.updatedAt);
-  const assignee = users.find((u) => u.id === lead.assignedTo);
+  const staleSince = lead.ultima_interacao ?? lead.created_at;
+  const days = staleSince ? daysAgo(staleSince) : 0;
 
   const {
     attributes,
@@ -51,7 +48,7 @@ export function KanbanCard({ lead, overlay }: KanbanCardProps) {
     >
       <div className="flex items-start justify-between gap-2">
         <h4 className="text-sm font-medium text-text-primary leading-tight truncate">
-          {lead.name}
+          {displayName(lead.firstname, lead.lastname)}
         </h4>
         {days > 7 && (
           <span className="text-[10px] text-warning bg-warning/15 px-1.5 py-0.5 rounded-full whitespace-nowrap">
@@ -60,26 +57,22 @@ export function KanbanCard({ lead, overlay }: KanbanCardProps) {
         )}
       </div>
 
-      {lead.company && (
-        <p className="text-xs text-text-secondary truncate">{lead.company}</p>
+      {lead.whatsapp && (
+        <p className="text-xs text-text-secondary truncate">{lead.whatsapp}</p>
       )}
 
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-text-primary">
-          {formatCurrency(lead.value)}
-        </span>
-        {assignee && (
-          <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center" title={assignee.name}>
-            <span className="text-[9px] text-text-primary font-medium">
-              {assignee.name.split(" ").map((n) => n[0]).join("")}
-            </span>
-          </div>
+      <div className="flex items-center gap-2">
+        {lead.chat_status && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent/15 text-accent truncate">
+            {lead.chat_status}
+          </span>
+        )}
+        {lead.messages_count != null && lead.messages_count > 0 && (
+          <span className="text-[10px] text-text-secondary">
+            {lead.messages_count} msgs
+          </span>
         )}
       </div>
-
-      {lead.phone && (
-        <p className="text-[11px] text-text-secondary/70">{lead.phone}</p>
-      )}
     </div>
   );
 }

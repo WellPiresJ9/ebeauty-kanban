@@ -57,7 +57,7 @@ export function SalesFunnelChart({ data }: FunnelChartProps) {
 }
 
 interface LeadsOverTimeProps {
-  data: { month: string; leads: number; won: number }[];
+  data: { month: string; leads: number }[];
 }
 
 export function LeadsOverTimeChart({ data }: LeadsOverTimeProps) {
@@ -90,14 +90,6 @@ export function LeadsOverTimeChart({ data }: LeadsOverTimeProps) {
             strokeWidth={2}
             dot={{ fill: "#C9A96E", r: 4 }}
             name="Leads Criados"
-          />
-          <Line
-            type="monotone"
-            dataKey="won"
-            stroke="#6BAF7B"
-            strokeWidth={2}
-            dot={{ fill: "#6BAF7B", r: 4 }}
-            name="Ganhos"
           />
         </LineChart>
       </ResponsiveContainer>

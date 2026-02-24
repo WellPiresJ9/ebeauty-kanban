@@ -27,3 +27,8 @@ export function daysAgo(dateStr: string): number {
 export function generateId(): string {
   return Math.random().toString(36).substring(2, 15);
 }
+
+export function displayName(firstname: string | null, lastname: string | null): string {
+  const parts = [firstname, lastname].filter(Boolean);
+  return parts.length > 0 ? parts.join(" ") : "Sem nome";
+}

@@ -5,7 +5,7 @@ import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useLeadsStore } from "@/stores/useLeadsStore";
 import { Stage, Lead } from "@/types";
-import { formatCurrency, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { KanbanCard } from "./KanbanCard";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
@@ -17,34 +17,26 @@ interface KanbanColumnProps {
 }
 
 export function KanbanColumn({ stage, leads }: KanbanColumnProps) {
-  const totalValue = leads.reduce((sum, l) => sum + l.value, 0);
   const addLead = useLeadsStore((s) => s.addLead);
 
   const [showLeadModal, setShowLeadModal] = useState(false);
-  const [leadName, setLeadName] = useState("");
-  const [leadCompany, setLeadCompany] = useState("");
-  const [leadPhone, setLeadPhone] = useState("");
-  const [leadValue, setLeadValue] = useState("");
+  const [leadFirstname, setLeadFirstname] = useState("");
+  const [leadLastname, setLeadLastname] = useState("");
+  const [leadWhatsapp, setLeadWhatsapp] = useState("");
 
   function resetLeadForm() {
-    setLeadName("");
-    setLeadCompany("");
-    setLeadPhone("");
-    setLeadValue("");
+    setLeadFirstname("");
+    setLeadLastname("");
+    setLeadWhatsapp("");
   }
 
   function handleAddLead() {
-    if (leadName.trim()) {
+    if (leadFirstname.trim() || leadLastname.trim()) {
       addLead({
-        name: leadName.trim(),
-        company: leadCompany.trim(),
-        phone: leadPhone.trim(),
-        email: "",
-        value: parseFloat(leadValue) || 0,
+        firstname: leadFirstname.trim(),
+        lastname: leadLastname.trim(),
+        whatsapp: leadWhatsapp.trim(),
         stageId: stage.id,
-        assignedTo: "",
-        source: "",
-        notes: "",
       });
       resetLeadForm();
       setShowLeadModal(false);
@@ -81,9 +73,6 @@ export function KanbanColumn({ stage, leads }: KanbanColumnProps) {
             </svg>
           </button>
         </div>
-        <p className="text-xs text-text-secondary ml-[18px]">
-          {formatCurrency(totalValue)}
-        </p>
       </div>
 
       {/* Cards */}
@@ -114,41 +103,33 @@ export function KanbanColumn({ stage, leads }: KanbanColumnProps) {
       >
         <div className="space-y-3">
           <Input
-            id={`lead-name-${stage.id}`}
+            id={`lead-firstname-${stage.id}`}
             label="Nome *"
-            placeholder="Nome do lead"
-            value={leadName}
-            onChange={(e) => setLeadName(e.target.value)}
+            placeholder="Primeiro nome"
+            value={leadFirstname}
+            onChange={(e) => setLeadFirstname(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAddLead()}
             autoFocus
           />
           <Input
-            id={`lead-company-${stage.id}`}
-            label="Empresa"
-            placeholder="Nome da empresa"
-            value={leadCompany}
-            onChange={(e) => setLeadCompany(e.target.value)}
+            id={`lead-lastname-${stage.id}`}
+            label="Sobrenome"
+            placeholder="Sobrenome"
+            value={leadLastname}
+            onChange={(e) => setLeadLastname(e.target.value)}
           />
           <Input
-            id={`lead-phone-${stage.id}`}
-            label="Telefone"
+            id={`lead-whatsapp-${stage.id}`}
+            label="WhatsApp"
             placeholder="(00) 00000-0000"
-            value={leadPhone}
-            onChange={(e) => setLeadPhone(e.target.value)}
-          />
-          <Input
-            id={`lead-value-${stage.id}`}
-            label="Valor (R$)"
-            type="number"
-            placeholder="0"
-            value={leadValue}
-            onChange={(e) => setLeadValue(e.target.value)}
+            value={leadWhatsapp}
+            onChange={(e) => setLeadWhatsapp(e.target.value)}
           />
           <div className="flex gap-2 justify-end pt-2">
             <Button variant="ghost" size="sm" onClick={() => { setShowLeadModal(false); resetLeadForm(); }}>
               Cancelar
             </Button>
-            <Button size="sm" onClick={handleAddLead} disabled={!leadName.trim()}>
+            <Button size="sm" onClick={handleAddLead} disabled={!leadFirstname.trim() && !leadLastname.trim()}>
               Criar Lead
             </Button>
           </div>

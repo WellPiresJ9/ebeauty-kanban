@@ -5,54 +5,29 @@ import { useLeadsStore } from "@/stores/useLeadsStore";
 import { useStagesStore } from "@/stores/useStagesStore";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { SalesFunnelChart, LeadsOverTimeChart, ConversionChart } from "@/components/dashboard/Charts";
-import { formatCurrency } from "@/lib/utils";
-import { differenceInDays, parseISO } from "date-fns";
+import { differenceInDays, parseISO, format } from "date-fns";
 
 export default function DashboardPage() {
   const leads = useLeadsStore((s) => s.leads);
+  const loading = useLeadsStore((s) => s.loading);
   const stages = useStagesStore((s) => s.stages);
 
   const kpis = useMemo(() => {
     const totalLeads = leads.length;
-    const wonLeads = leads.filter((l) => l.stageId === "stage-won");
-    const lostLeads = leads.filter((l) => l.stageId === "stage-lost");
-    const closedLeads = [...wonLeads, ...lostLeads];
-    const activeLeads = leads.filter(
-      (l) => l.stageId !== "stage-won" && l.stageId !== "stage-lost"
-    );
-
-    const conversionRate =
-      closedLeads.length > 0
-        ? ((wonLeads.length / closedLeads.length) * 100).toFixed(1)
-        : "0";
-
-    const totalWonValue = wonLeads.reduce((sum, l) => sum + l.value, 0);
-    const avgTicket = wonLeads.length > 0 ? totalWonValue / wonLeads.length : 0;
-
-    const pipelineValue = activeLeads.reduce((sum, l) => sum + l.value, 0);
+    const inboxLeads = leads.filter((l) => l.stageId === "stage-1").length;
+    const openChats = leads.filter((l) => l.chat_status && l.chat_status !== "closed").length;
 
     const avgDays =
-      activeLeads.length > 0
+      totalLeads > 0
         ? Math.round(
-            activeLeads.reduce(
-              (sum, l) =>
-                sum + differenceInDays(new Date(), parseISO(l.createdAt)),
-              0
-            ) / activeLeads.length
+            leads.reduce((sum, l) => {
+              if (!l.created_at) return sum;
+              return sum + differenceInDays(new Date(), parseISO(l.created_at));
+            }, 0) / totalLeads
           )
         : 0;
 
-    return {
-      totalLeads,
-      activeLeads: activeLeads.length,
-      wonCount: wonLeads.length,
-      lostCount: lostLeads.length,
-      conversionRate,
-      avgTicket,
-      pipelineValue,
-      totalWonValue,
-      avgDays,
-    };
+    return { totalLeads, inboxLeads, openChats, avgDays };
   }, [leads]);
 
   const funnelData = useMemo(() => {
@@ -65,20 +40,30 @@ export default function DashboardPage() {
   }, [leads, stages]);
 
   const leadsOverTime = useMemo(() => {
-    const months = [
-      { month: "Set", key: "2024-09" },
-      { month: "Out", key: "2024-10" },
-      { month: "Nov", key: "2024-11" },
-      { month: "Dez", key: "2024-12" },
-      { month: "Jan", key: "2025-01" },
-    ];
-    return months.map(({ month, key }) => ({
-      month,
-      leads: leads.filter((l) => l.createdAt.startsWith(key)).length,
-      won: leads.filter(
-        (l) => l.stageId === "stage-won" && l.closedAt?.startsWith(key)
-      ).length,
-    }));
+    if (leads.length === 0) return [];
+    // Generate months dynamically from real data
+    const monthSet = new Map<string, { leads: number }>();
+    for (const lead of leads) {
+      if (!lead.created_at) continue;
+      const key = lead.created_at.substring(0, 7); // "YYYY-MM"
+      const entry = monthSet.get(key);
+      if (entry) {
+        entry.leads++;
+      } else {
+        monthSet.set(key, { leads: 1 });
+      }
+    }
+    return [...monthSet.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-6)
+      .map(([key, val]) => {
+        const [year, month] = key.split("-");
+        const date = new Date(Number(year), Number(month) - 1);
+        return {
+          month: format(date, "MMM yy"),
+          leads: val.leads,
+        };
+      });
   }, [leads]);
 
   const conversionData = useMemo(() => {
@@ -92,6 +77,14 @@ export default function DashboardPage() {
       .filter((d) => d.value > 0);
   }, [leads, stages]);
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-text-secondary text-sm">Carregando...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold text-text-primary">Dashboard</h1>
@@ -101,7 +94,7 @@ export default function DashboardPage() {
         <KpiCard
           title="Total Leads"
           value={String(kpis.totalLeads)}
-          subtitle={`${kpis.activeLeads} ativos no pipeline`}
+          subtitle="Leads com etapa definida"
           icon={
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -109,30 +102,29 @@ export default function DashboardPage() {
           }
         />
         <KpiCard
-          title="Taxa de Conversão"
-          value={`${kpis.conversionRate}%`}
-          subtitle={`${kpis.wonCount} ganhos, ${kpis.lostCount} perdidos`}
+          title="Leads no Inbox"
+          value={String(kpis.inboxLeads)}
+          subtitle="Aguardando atendimento"
           icon={
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
             </svg>
           }
-          trend={{ value: `${kpis.conversionRate}%`, positive: Number(kpis.conversionRate) > 50 }}
         />
         <KpiCard
-          title="Ticket Médio"
-          value={formatCurrency(kpis.avgTicket)}
-          subtitle={`Total ganho: ${formatCurrency(kpis.totalWonValue)}`}
+          title="Chats Abertos"
+          value={String(kpis.openChats)}
+          subtitle="Conversas ativas"
           icon={
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
           }
         />
         <KpiCard
           title="Tempo Médio"
           value={`${kpis.avgDays} dias`}
-          subtitle={`Pipeline: ${formatCurrency(kpis.pipelineValue)}`}
+          subtitle="Desde criação do lead"
           icon={
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />

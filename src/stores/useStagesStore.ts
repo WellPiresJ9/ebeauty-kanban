@@ -28,23 +28,14 @@ export const useStagesStore = create<StagesStore>((set, get) => ({
 
   addStage: (name, color) => {
     const stages = get().stages;
-    const activeStages = stages.filter((s) => !s.isSystem);
-    const newOrder = activeStages.length;
+    const newOrder = stages.length;
     const newStage: Stage = {
       id: `stage-${generateId()}`,
       name,
       color,
       order: newOrder,
     };
-    // Insert before system stages
-    const systemStages = stages.filter((s) => s.isSystem);
-    set({
-      stages: [
-        ...activeStages,
-        newStage,
-        ...systemStages.map((s, i) => ({ ...s, order: newOrder + 1 + i })),
-      ],
-    });
+    set({ stages: [...stages, newStage] });
   },
 
   updateStage: (id, updates) => {
@@ -54,8 +45,6 @@ export const useStagesStore = create<StagesStore>((set, get) => ({
   },
 
   removeStage: (id) => {
-    const stage = get().stages.find((s) => s.id === id);
-    if (stage?.isSystem) return;
     const remaining = get().stages.filter((s) => s.id !== id);
     set({
       stages: remaining.map((s, i) => ({ ...s, order: i })),
@@ -67,7 +56,7 @@ export const useStagesStore = create<StagesStore>((set, get) => ({
   },
 
   getActiveStages: () => {
-    return get().stages.filter((s) => !s.isSystem).sort((a, b) => a.order - b.order);
+    return [...get().stages].sort((a, b) => a.order - b.order);
   },
 
   getStageById: (id) => {

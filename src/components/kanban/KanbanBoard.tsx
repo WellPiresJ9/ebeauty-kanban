@@ -29,13 +29,14 @@ const PRESET_COLORS = [
 
 export function KanbanBoard() {
   const leads = useLeadsStore((s) => s.leads);
+  const loading = useLeadsStore((s) => s.loading);
   const moveLead = useLeadsStore((s) => s.moveLead);
   const stages = useStagesStore((s) => s.stages);
   const addStage = useStagesStore((s) => s.addStage);
   const searchQuery = useUIStore((s) => s.searchQuery);
   const getFilteredLeads = useLeadsStore((s) => s.getFilteredLeads);
 
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<number | null>(null);
   const [showStageModal, setShowStageModal] = useState(false);
   const [newStageName, setNewStageName] = useState("");
   const [newStageColor, setNewStageColor] = useState(PRESET_COLORS[0]);
@@ -70,7 +71,7 @@ export function KanbanBoard() {
     : null;
 
   function handleDragStart(event: DragStartEvent) {
-    setActiveId(event.active.id as string);
+    setActiveId(event.active.id as number);
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -79,15 +80,12 @@ export function KanbanBoard() {
 
     if (!over) return;
 
-    const leadId = active.id as string;
+    const leadId = active.id as number;
     let targetStageId: string | null = null;
 
-    // Dropped on a column
     if (over.data.current?.type === "column") {
       targetStageId = over.id as string;
-    }
-    // Dropped on another card — find its stage
-    else if (over.data.current?.type === "lead") {
+    } else if (over.data.current?.type === "lead") {
       const overLead = over.data.current.lead as Lead;
       targetStageId = overLead.stageId;
     }
@@ -98,6 +96,14 @@ export function KanbanBoard() {
     if (lead && lead.stageId !== targetStageId) {
       moveLead(leadId, targetStageId);
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-text-secondary text-sm">Carregando leads...</div>
+      </div>
+    );
   }
 
   return (

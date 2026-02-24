@@ -7,14 +7,13 @@ import { useUIStore } from "@/stores/useUIStore";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
-import { formatCurrency, formatDate, daysAgo, cn } from "@/lib/utils";
-import type { Lead, SortField } from "@/types";
+import { displayName, formatDate, daysAgo, cn } from "@/lib/utils";
+import type { SortField } from "@/types";
 
 export function LeadsTable() {
   const leads = useLeadsStore((s) => s.leads);
   const moveLeads = useLeadsStore((s) => s.moveLeads);
   const getFilteredLeads = useLeadsStore((s) => s.getFilteredLeads);
-  const users = useLeadsStore((s) => s.users);
   const stages = useStagesStore((s) => s.stages);
   const searchQuery = useUIStore((s) => s.searchQuery);
   const sortField = useUIStore((s) => s.sortField);
@@ -35,8 +34,8 @@ export function LeadsTable() {
 
   const sortedLeads = useMemo(() => {
     const sorted = [...filteredLeads].sort((a, b) => {
-      let aVal: string | number = a[sortField] ?? "";
-      let bVal: string | number = b[sortField] ?? "";
+      let aVal: string | number = (a[sortField] as string | number | null) ?? "";
+      let bVal: string | number = (b[sortField] as string | number | null) ?? "";
       if (typeof aVal === "string") aVal = aVal.toLowerCase();
       if (typeof bVal === "string") bVal = bVal.toLowerCase();
       if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
@@ -128,17 +127,21 @@ export function LeadsTable() {
                   className="w-3.5 h-3.5 accent-accent"
                 />
               </th>
-              <SortHeader field="name">Nome</SortHeader>
-              <SortHeader field="company">Empresa</SortHeader>
-              <SortHeader field="value">Valor</SortHeader>
+              <SortHeader field="firstname">Nome</SortHeader>
+              <th className="text-left px-3 py-2 text-xs font-medium text-text-secondary">
+                WhatsApp
+              </th>
+              <th className="text-left px-3 py-2 text-xs font-medium text-text-secondary">
+                Estado
+              </th>
               <th className="text-left px-3 py-2 text-xs font-medium text-text-secondary">
                 Etapa
               </th>
               <th className="text-left px-3 py-2 text-xs font-medium text-text-secondary">
-                Responsável
+                Chat Status
               </th>
-              <SortHeader field="createdAt">Criado em</SortHeader>
-              <SortHeader field="updatedAt">Atualizado</SortHeader>
+              <SortHeader field="messages_count">Msgs</SortHeader>
+              <SortHeader field="created_at">Criado em</SortHeader>
               <th className="text-left px-3 py-2 text-xs font-medium text-text-secondary">
                 Parado
               </th>
@@ -147,8 +150,8 @@ export function LeadsTable() {
           <tbody>
             {sortedLeads.map((lead) => {
               const stage = stages.find((s) => s.id === lead.stageId);
-              const assignee = users.find((u) => u.id === lead.assignedTo);
-              const days = daysAgo(lead.updatedAt);
+              const staleSince = lead.ultima_interacao ?? lead.created_at;
+              const days = staleSince ? daysAgo(staleSince) : 0;
               const isSelected = selectedLeadIds.includes(lead.id);
 
               return (
@@ -169,28 +172,27 @@ export function LeadsTable() {
                     />
                   </td>
                   <td className="px-3 py-2.5">
-                    <div>
-                      <p className="text-sm font-medium text-text-primary">{lead.name}</p>
-                      <p className="text-xs text-text-secondary">{lead.phone}</p>
-                    </div>
+                    <p className="text-sm font-medium text-text-primary">
+                      {displayName(lead.firstname, lead.lastname)}
+                    </p>
                   </td>
                   <td className="px-3 py-2.5 text-sm text-text-secondary">
-                    {lead.company}
+                    {lead.whatsapp ?? "—"}
                   </td>
-                  <td className="px-3 py-2.5 text-sm font-medium text-accent">
-                    {formatCurrency(lead.value)}
+                  <td className="px-3 py-2.5 text-sm text-text-secondary">
+                    {lead.state ?? "—"}
                   </td>
                   <td className="px-3 py-2.5">
                     {stage && <Badge color={stage.color}>{stage.name}</Badge>}
                   </td>
                   <td className="px-3 py-2.5 text-sm text-text-secondary">
-                    {assignee?.name}
+                    {lead.chat_status ?? "—"}
                   </td>
                   <td className="px-3 py-2.5 text-sm text-text-secondary">
-                    {formatDate(lead.createdAt)}
+                    {lead.messages_count ?? 0}
                   </td>
                   <td className="px-3 py-2.5 text-sm text-text-secondary">
-                    {formatDate(lead.updatedAt)}
+                    {lead.created_at ? formatDate(lead.created_at) : "—"}
                   </td>
                   <td className="px-3 py-2.5">
                     <span
